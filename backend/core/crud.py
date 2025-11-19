@@ -1,15 +1,18 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 
-def create_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User(name=user.name)
-    db.add(db_user)
+# Create a new anomaly
+def create_anomaly(db: Session, anomaly: schemas.AnomalyCreate):
+    db_anomaly = models.Anomaly(**anomaly.dict())
+    db.add(db_anomaly)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(db_anomaly)
+    return db_anomaly
 
-def get_users(db: Session):
-    return db.query(models.User).all()
+# Get all anomalies
+def get_anomalies(db: Session):
+    return db.query(models.Anomaly).all()
 
-def get_user(db: Session, user_id: int):
-    return db.query(models.User).filter(models.User.id == user_id).first()
+# Get anomaly by ID
+def get_anomaly(db: Session, anomaly_id: int):
+    return db.query(models.Anomaly).filter(models.Anomaly.id == anomaly_id).first()
