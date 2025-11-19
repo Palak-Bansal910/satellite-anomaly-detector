@@ -1,33 +1,21 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
+from core.database import engine, Base
 
-from core import models, schemas
-from core.database import engine, SessionLocal, Base
+# Import routers
+from routes.anomaly_routes import router as anomaly_router
+from routes.user_routes import router as user_router
 
-# Create all tables in the database
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Initialize FastAPI app
 app = FastAPI(title="Satellite Anomaly Detection Backend")
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Include routers
+app.include_router(user_router)      # Routes for User table
+app.include_router(anomaly_router)   # Routes for Anomaly table
 
-# Test route to create a user
-@app.post("/users/", response_model=schemas.UserCreate)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(name=user.name)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-# Test route to get all users
-@app.get("/users/")
-def get_users(db: Session = Depends(get_db)):
-    users = db.query(models.User).all()
-    return users
+# Optional root endpoint
+@app.get("/")
+def root():
+    return {"message": "Backend is running!"}
