@@ -1,7 +1,11 @@
 # simulator/sensor_failures.py
 import random
 from typing import Dict
-from .telemetry_simulator import TelemetrySimulator
+
+try:
+    from .telemetry_simulator import TelemetrySimulator
+except ImportError:
+    from simulator.telemetry_simulator import TelemetrySimulator
 
 
 class SensorFailureInjector:
