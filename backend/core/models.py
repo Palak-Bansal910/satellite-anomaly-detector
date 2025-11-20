@@ -24,18 +24,9 @@ class Telemetry(Base):
 # Anomaly table
 class Anomaly(Base):
     __tablename__ = "anomalies"
-<<<<<<< HEAD
-id = Column(Integer, primary_key=True, index=True)
-satellite_id = Column(String, index=True)
-metric = Column(String)
-value = Column(Float)
-severity = Column(String)
-timestamp = Column(DateTime, default=datetime.utcnow)
-=======
     id = Column(Integer, primary_key=True, index=True)
     satellite_id = Column(String, index=True)
     severity = Column(String)
     issue = Column(String)
     score = Column(Float)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
->>>>>>> 352a09d13b15722bc231abf761a5364341257ee6

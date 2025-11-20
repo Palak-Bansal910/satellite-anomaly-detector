@@ -1,8 +1,5 @@
 import numpy as np
 
-
-
-
 def compute_anomaly(features: np.ndarray) -> dict:
     """
     Simple rule-based anomaly detection for hackathon prototype.

@@ -1,6 +1,7 @@
 
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 class TelemetrySchema(BaseModel):
     satellite_id: str
@@ -18,7 +19,6 @@ class TelemetrySchema(BaseModel):
     solar_panel_current: float | None = None
     timestamp: datetime
 
-<<<<<<< HEAD
 class AnomalyCreate(BaseModel):
     satellite_id: str
     metric: str
@@ -37,12 +37,3 @@ class Anomaly(BaseModel):
 
 class Config:
     orm_mode = True
-=======
-class AnomalySchema(BaseModel):
-    satellite_id: str
-    severity: str
-    issue: str
-    score: float
-    timestamp: datetime
-
->>>>>>> 352a09d13b15722bc231abf761a5364341257ee6
