@@ -1,48 +1,88 @@
 # backend/models/comms_seq_model.py
 
-import numpy as np
-from tensorflow.keras.models import load_model
+"""
+Simplified communication pattern anomaly detector for demo.
 
-# ---------------------------
-# 1. Load LSTM Autoencoder model
-# ---------------------------
-# Replace 'comms_lstm_model.h5' with your trained model file
-model = load_model("comms_lstm_model.h5")
+Instead of a trained sequence model (LSTM/autoencoder),
+we use simple rule-based checks on:
+- gaps between contact times
+- sudden drop in packets
+- unexpected spike in error rate
+"""
 
-# Define sequence length and number of features (update to match your training)
-seq_len = 50
-n_features = 4  # e.g., signal features like amplitude, frequency, phase, etc.
+from typing import Dict, Tuple
 
-# ---------------------------
-# 2. Function to compute reconstruction error
-# ---------------------------
-def detect(sequence):
+
+def detect(features: Dict[str, float]) -> Tuple[float, str]:
     """
-    Compute reconstruction error for a sequence using LSTM autoencoder.
-    Higher error indicates anomaly.
-    """
-    seq = np.array(sequence).reshape(1, seq_len, n_features)
-    recon = model.predict(seq, verbose=0)
-    error = np.mean((seq - recon) ** 2)
-    return error
+    Args:
+        features: dict with keys like:
+            - avg_contact_gap_min      (float) average minutes between contacts
+            - last_gap_min             (float) minutes since last contact
+            - packets_per_min          (float)
+            - error_rate_pct           (float)
+            - downlink_success_ratio   (float 0–1, optional)
 
-# ---------------------------
-# 3. Optional: helper function to preprocess sequences
-# ---------------------------
-def preprocess_sequence(sequence):
+    Returns:
+        score (float): 0–1 anomaly score
+        message (str): explanation
     """
-    Example preprocessing: normalize, reshape, or pad sequence.
-    """
-    seq = np.array(sequence)
-    if seq.shape[0] < seq_len:
-        # pad with zeros if sequence is too short
-        pad_width = seq_len - seq.shape[0]
-        seq = np.pad(seq, ((0, pad_width), (0, 0)), 'constant')
-    return seq[:seq_len]  # trim if longer
-from backend.models import detect, preprocess_sequence
 
-seq = preprocess_sequence(my_raw_sequence)
-error = detect(seq)
+    gap_avg = features.get("avg_contact_gap_min")
+    gap_last = features.get("last_gap_min")
+    packets = features.get("packets_per_min")
+    err = features.get("error_rate_pct")
+    success = features.get("downlink_success_ratio")
 
-if error > 0.001:  # threshold based on training
-    print("Anomaly detected in communication sequence!")
+    score = 0.0
+    reasons = []
+
+    # 1) Communication gap anomaly
+    if gap_avg is not None and gap_last is not None:
+        # if last gap is much larger than typical
+        if gap_last > 3 * gap_avg:
+            score += 0.6
+            reasons.append(
+                f"Long outage: last gap {gap_last:.1f} min vs avg {gap_avg:.1f} min"
+            )
+        elif gap_last > 2 * gap_avg:
+            score += 0.3
+            reasons.append(
+                f"Extended contact gap {gap_last:.1f} min vs avg {gap_avg:.1f} min"
+            )
+
+    # 2) Throughput / packets anomaly
+    if packets is not None:
+        if packets < 5:
+            score += 0.3
+            reasons.append(f"Very low traffic {packets:.1f} packets/min")
+        elif packets < 15:
+            score += 0.15
+            reasons.append(f"Low traffic {packets:.1f} packets/min")
+
+    # 3) Error rate anomaly
+    if err is not None:
+        if err > 40:
+            score += 0.5
+            reasons.append(f"High error rate {err:.1f}%")
+        elif err > 20:
+            score += 0.25
+            reasons.append(f"Elevated error rate {err:.1f}%")
+
+    # 4) Downlink success ratio (optional)
+    if success is not None:
+        if success < 0.5:
+            score += 0.4
+            reasons.append(f"Poor downlink success {success * 100:.1f}%")
+        elif success < 0.8:
+            score += 0.2
+            reasons.append(f"Weak downlink success {success * 100:.1f}%")
+
+    # Finalize
+    if score == 0.0:
+        message = "Communication pattern nominal"
+    else:
+        score = min(score, 1.0)
+        message = "; ".join(reasons)
+
+    return score, message
