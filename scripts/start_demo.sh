@@ -2,19 +2,21 @@
 
 ########################################
 # Satellite Anomaly Detector – Demo Run
-# Usage (from project root):
-#   bash start_demo.sh
+# Usage (from ANY location):
+#   bash scripts/start_demo.sh
 ########################################
 
-# Always run from the script's folder (project root)
+# Move to the folder containing this script (scripts/)
 cd "$(dirname "$0")"
 
-# ----- CONFIG -----
+# Move one level up to project root: satellite-anomaly-detector/
+cd ..
+
+PROJECT_ROOT="$(pwd)"
+echo "========== SATELLITE ANOMALY DETECTOR DEMO =========="
+echo "Project root : $PROJECT_ROOT"
 BACKEND_PORT=8000
 DASHBOARD_PORT=8501
-
-echo "========== SATELLITE ANOMALY DETECTOR DEMO =========="
-echo "Project root : $(pwd)"
 echo "Backend port : $BACKEND_PORT"
 echo "Dashboard    : http://localhost:$DASHBOARD_PORT"
 echo "====================================================="
