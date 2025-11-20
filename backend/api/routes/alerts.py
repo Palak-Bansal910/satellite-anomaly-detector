@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # reads .env in project root
 
-router = APIRouter(prefix="/alerts", tags=["Alerts"])
+router = APIRouter(tags=["Alerts"])
 
 SLACK_WEBHOOK = os.getenv("SLACK_WEBHOOK_URL")  # set in .env
 EMAIL_HOST = os.getenv("ALERT_EMAIL_HOST")     # smtp host
@@ -59,6 +59,23 @@ def send_alert(payload: AlertRequest):
             result["errors"].append(f"email:{str(e)}")
 
     if not (result["slack"] or result["email"]):
-        raise HTTPException(status_code=500, detail={"msg": "No alert channel configured or failed", "result": result})
+        if not SLACK_WEBHOOK and not (EMAIL_HOST and EMAIL_USER and EMAIL_PASS and EMAIL_TO):
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "msg": "Alert service not configured. Please configure Slack webhook or Email settings in .env file",
+                    "result": result,
+                    "config_required": True
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "msg": "Failed to send alerts through configured channels",
+                    "result": result,
+                    "config_required": False
+                }
+            )
 
     return {"status": "sent", **result}

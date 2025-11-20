@@ -4,7 +4,7 @@ from backend.services.state import get_latest_anomalies
 from backend.core.database import SessionLocal
 from backend.core.models import AnomalyEvent
 
-router = APIRouter(prefix="/anomalies", tags=["Anomalies"])
+router = APIRouter(tags=["Anomalies"])
 
 @router.get("/latest")
 def latest_anomalies():
@@ -22,10 +22,10 @@ def anomaly_history(limit: int = Query(50, ge=1, le=200)):
         )
         result = [
             {
-                "timestamp": r.timestamp,
+                "timestamp": r.timestamp.isoformat() if r.timestamp else None,
                 "satellite_id": r.satellite_id,
                 "severity": r.severity,
-                "issues": r.issues.split(",") if r.issues else [],
+                "issues": r.issue.split(",") if r.issue else [], 
                 "score": r.score,
             } for r in rows
         ]

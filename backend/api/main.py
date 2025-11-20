@@ -1,11 +1,10 @@
 # backend/api/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api.routes import telemetry, anomaly
 from ..core.database import Base, engine
 from ..core.logger import logger
 
-# in main.py (where other routers are included)
+# Import routers
 from .routes import telemetry, anomaly, alerts
 
 # create tables

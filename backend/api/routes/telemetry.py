@@ -1,6 +1,7 @@
 # backend/api/routes/telemetry.py
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from datetime import datetime
 from backend.services.preprocess import preprocess_telemetry
 from backend.services.anomaly_engine import compute_anomaly
 from backend.services.state import add_anomaly_record
@@ -8,7 +9,7 @@ from backend.core.database import SessionLocal     # adjust name if your file is
 from backend.core.models import AnomalyEvent
 from ...core.logger import logger
 
-router = APIRouter(prefix="/telemetry", tags=["Telemetry"])
+router = APIRouter(tags=["Telemetry"])
 
 # Define Pydantic schema inline or import from api/schemas.py if you prefer
 class TelemetrySchema(BaseModel):
@@ -49,11 +50,16 @@ async def receive_telemetry(data: TelemetrySchema):
         # persist to DB
         db = SessionLocal()
         try:
+            if isinstance(data.timestamp, str):
+                timestamp_dt = datetime.fromisoformat(data.timestamp.replace('Z', '+00:00'))
+            else:
+                timestamp_dt = data.timestamp
+            
             db_event = AnomalyEvent(
-                timestamp=data.timestamp,
+                timestamp=timestamp_dt,
                 satellite_id=data.satellite_id,
                 severity=anomaly.get("severity", "normal"),
-                issues=",".join(anomaly.get("issues", [])),
+                issue=",".join(anomaly.get("issues", [])), 
                 score=float(anomaly.get("score", 0.0))
             )
             db.add(db_event)
