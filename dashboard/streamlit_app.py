@@ -81,7 +81,9 @@ with col1:
             latest_filtered = [l for l in latest if l.get("satellite_id") == selected_sat]
         else:
             latest_filtered = latest
-        render_alert_card(latest_filtered)
+        
+        for item in latest_filtered:
+            render_alert_card(item)
 
     st.markdown("---")
     st.subheader("Anomaly Score Trend")

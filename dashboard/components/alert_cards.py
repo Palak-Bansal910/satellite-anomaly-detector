@@ -26,14 +26,23 @@ def _format_ts(ts):
         return ts
 
 def send_alert_to_backend(item):
-    # build payload
-    ann = item.get("anomaly", {})
+    # build payload 
+    if "anomaly" in item:
+        ann = item.get("anomaly", {})
+        severity = ann.get("severity", "normal")
+        issues = ann.get("issues", [])
+        score = ann.get("score", 0.0)
+    else:
+        severity = item.get("severity", "normal")
+        issues = item.get("issues", [])
+        score = item.get("score", 0.0)
+    
     payload = {
         "timestamp": item.get("timestamp"),
         "satellite_id": item.get("satellite_id"),
-        "severity": ann.get("severity", "normal"),
-        "issues": ann.get("issues", []),
-        "score": ann.get("score", 0.0)
+        "severity": severity,
+        "issues": issues,
+        "score": score
     }
     try:
         resp = requests.post(BACKEND_ALERT_URL, json=payload, timeout=5)
@@ -44,8 +53,18 @@ def send_alert_to_backend(item):
         return {"ok": False, "result": str(e)}
 
 def render_alert_card(item, show_send_button=True):
-    ann = item.get("anomaly", {})
-    severity = ann.get("severity", "normal")
+    if "anomaly" in item:
+        ann = item.get("anomaly", {})
+        severity = ann.get("severity", "normal")
+        issues = ann.get("issues", [])
+        score = ann.get("score", 0.0)
+    else:
+        # History format: flat structure
+        severity = item.get("severity", "normal")
+        issues = item.get("issues", [])
+        score = item.get("score", 0.0)
+        ann = {"severity": severity, "issues": issues, "score": score}
+    
     color = SEVERITY_COLORS.get(severity, "#95A5A6")
     ts = _format_ts(item.get("timestamp", ""))
 
@@ -58,8 +77,8 @@ def render_alert_card(item, show_send_button=True):
                 <div style="border-left:6px solid {color}; padding:10px; margin-bottom:8px; background:#F8F9F9; border-radius:6px;">
                 <strong>Satellite:</strong> {item.get('satellite_id', 'unknown')} &nbsp;&nbsp; <small>{ts}</small><br>
                 <strong>Severity:</strong> <span style="color:{color}; font-weight:700">{severity.upper()}</span><br>
-                <strong>Issues:</strong> {_pretty_issues(ann.get('issues', []))} <br>
-                <strong>Score:</strong> {round(ann.get('score', 0.0), 2)}
+                <strong>Issues:</strong> {_pretty_issues(issues)} <br>
+                <strong>Score:</strong> {round(score, 2)}
                 </div>
                 """,
                 unsafe_allow_html=True,
