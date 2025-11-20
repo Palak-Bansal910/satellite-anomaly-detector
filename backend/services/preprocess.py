@@ -1,5 +1,5 @@
 import numpy as np
-from ..api.telemetry import Telemetry
+from backend.core.schemas import Telemetry
 
 def preprocess_telemetry(data: Telemetry) -> np.ndarray:
     """

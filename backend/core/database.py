@@ -1,28 +1,15 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 import os
-from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Use a local SQLite file for demo
+BASE_DIR = Path(__file__).resolve().parents[2]  # project root
+DB_PATH = BASE_DIR / "satellite_demo.db"
+DB_URL = f"sqlite:///{DB_PATH}"
 
-# PostgreSQL DB URL
-DB_URL = os.getenv("DB_URL", "postgresql://postgres:postgres@localhost:5432/telemetry")
-
-# SQLAlchemy engine
-engine = create_engine(DB_URL)
-
-# Session local class
+engine = create_engine(
+    DB_URL, connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
 Base = declarative_base()
-
-# Dependency for FastAPI
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()

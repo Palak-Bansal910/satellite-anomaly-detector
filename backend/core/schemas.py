@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
-class TelemetrySchema(BaseModel):
+class Telemetry(BaseModel):
     satellite_id: str
     temperature: float | None = None
     rssi: float | None = None

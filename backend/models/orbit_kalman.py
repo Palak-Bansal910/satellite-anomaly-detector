@@ -1,68 +1,91 @@
 # backend/models/orbit_kalman.py
 
-from orbit_kf.filter import ExtendedKalmanFilter
-from orbit_kf.propagation import CowellPropagator  # example propagator
 from .sensor_autoencoderwith_temp import detect as detect_sensor_anomaly
 from .comms_seq_model import detect as detect_comms_anomaly
 from .fusion import fusion_anomaly  # uses your existing fusion function
 
-def run_kf_with_anomaly_detection(init_state, init_cov, measurements):
+# backend/models/orbit_kalman.py
+
+"""
+Simplified orbit drift detector for demo purposes.
+
+We DON'T use a real Kalman filter here to avoid extra dependencies.
+We just compute a basic drift score based on change in altitude/inclination.
+"""
+
+from typing import Dict, Any, Tuple
+
+
+def kalman_predict(prev_state: Dict[str, float], obs: Dict[str, float]) -> Dict[str, float]:
     """
-    Run Kalman filter with anomaly detection using sensor and comms models.
-    
-    Args:
-        init_state (np.array): initial state vector
-        init_cov (np.array): initial covariance matrix
-        measurements (list of np.array): measurement sequence
-    
+    Dummy 'prediction' step: just blend previous state and current observation.
+    """
+    if not prev_state:
+        return obs
+
+    alpha = 0.7  # weight for previous state
+    beta = 1 - alpha
+
+    new_state = {}
+    for key in ["orbit_altitude_km", "orbit_inclination_deg"]:
+        prev_val = prev_state.get(key)
+        obs_val = obs.get(key)
+        if prev_val is None:
+            new_state[key] = obs_val
+        elif obs_val is None:
+            new_state[key] = prev_val
+        else:
+            new_state[key] = alpha * prev_val + beta * obs_val
+
+    return new_state
+
+
+def detect(prev_state: Dict[str, float], obs: Dict[str, float]) -> Tuple[float, str, Dict[str, float]]:
+    """
+    Detect orbit drift given previous and current orbit state.
+
     Returns:
-        x, P: final state estimate and covariance
+        score (float): 0–1 anomaly score
+        message (str): human-readable description
+        new_state (dict): updated tracked state
     """
-    # Initialize Extended Kalman Filter with Cowell propagator
-    kf = ExtendedKalmanFilter(propagator=CowellPropagator())
-    x, P = kf.initialize(init_state, init_cov)
+    new_state = kalman_predict(prev_state, obs)
 
-    for idx, z in enumerate(measurements):
-        # Kalman filter prediction and update
-        x, P = kf.predict(x, P)
-        x, P = kf.update(x, P, z)
+    alt_prev = prev_state.get("orbit_altitude_km")
+    alt_now = obs.get("orbit_altitude_km")
+    inc_prev = prev_state.get("orbit_inclination_deg")
+    inc_now = obs.get("orbit_inclination_deg")
 
-        # Compute residual or innovation
-        residual = z - kf.H.dot(x)  # or kf.innovation if defined
+    score = 0.0
+    reasons = []
 
-        # Run anomaly detection models
-        sensor_score = detect_sensor_anomaly(residual)
-        comms_score = detect_comms_anomaly(residual)
+    if alt_prev is not None and alt_now is not None:
+        alt_diff = abs(alt_now - alt_prev)
+        # crude thresholding
+        if alt_diff > 50:
+            score += 0.6
+            reasons.append(f"Altitude jump {alt_diff:.1f} km")
+        elif alt_diff > 20:
+            score += 0.3
+            reasons.append(f"Altitude change {alt_diff:.1f} km")
 
-        # Fuse results
-        anomaly_result = fusion_anomaly(
-            orbit_seq=[residual],      # residual for orbit anomaly
-            comms_seq=[residual]       # residual for comms anomaly
-        )
-        anomaly_flag = anomaly_result['fused_anomaly']
+    if inc_prev is not None and inc_now is not None:
+        inc_diff = abs(inc_now - inc_prev)
+        if inc_diff > 5:
+            score += 0.4
+            reasons.append(f"Inclination jump {inc_diff:.1f}°")
+        elif inc_diff > 2:
+            score += 0.2
+            reasons.append(f"Inclination change {inc_diff:.1f}°")
 
-        # Optional: print or log anomaly
-        if anomaly_flag:
-            print(f"⚠️ Anomaly detected at measurement index {idx}: {z}")
-            print(f"Details -> Orbit error: {anomaly_result['orbit_error']:.6f}, "
-                  f"Comms error: {anomaly_result['comms_error']:.6f}")
+    score = min(score, 1.0)
+    if not reasons:
+        message = "Orbit stable"
+    else:
+        message = "; ".join(reasons)
 
-    return x, P
+    return score, message, new_state
 
-
-
-    
-
-
-
-
-
-   
-
-
-    
-
-    
 
 
 
