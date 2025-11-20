@@ -5,6 +5,9 @@ from .routes import telemetry, anomaly
 from ..core.database import Base, engine
 from ..core.logger import logger
 
+# in main.py (where other routers are included)
+from .routes import telemetry, anomaly, alerts
+
 # create tables
 Base.metadata.create_all(bind=engine)
 logger.info("Database tables ensured.")
@@ -21,7 +24,7 @@ app.add_middleware(
 
 app.include_router(telemetry.router)
 app.include_router(anomaly.router)
-
+app.include_router(alerts.router)
 @app.get("/")
 def root():
     return {"message": "Satellite Anomaly Detector Backend is running"}

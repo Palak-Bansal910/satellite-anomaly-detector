@@ -1,26 +1,57 @@
+# simulator/simulator.py
 import time
-import requests
 import random
+import requests
+
+from telemetry_simulator import TelemetrySimulator
+from temp_anomalies import TempAnomalyInjector
+from sensor_failures import SensorFailureInjector
+from comms_anomalies import CommsAnomalyInjector
+
+BACKEND_URL = "http://127.0.0.1:8000/telemetry/"
+
+SEND_INTERVAL_SECONDS = 3.0  # how often to send telemetry per sat
 
 
-BACKEND = "http://localhost:8000/anomalies"
+def build_pipeline(sat_id: str):
+    base = TelemetrySimulator(satellite_id=sat_id)
+    # chain injectors: base -> temp -> sensor -> comms
+    temp = TempAnomalyInjector(base)
+    sensor = SensorFailureInjector(temp)
+    comms = CommsAnomalyInjector(sensor)
+    return comms  # top of pipeline
 
 
-sat_ids = ['SAT-A', 'SAT-B', 'SAT-C']
-metrics = ['temperature', 'battery', 'signal']
+def main():
+    satellites = ["SAT-1", "SAT-2", "SAT-3"]
+    sims = {sid: build_pipeline(sid) for sid in satellites}
+
+    print(f"Starting simulator for {len(satellites)} satellites.")
+    print(f"Sending telemetry to {BACKEND_URL}")
+
+    try:
+        while True:
+            for sid, sim in sims.items():
+                data = sim.step(SEND_INTERVAL_SECONDS)
+
+                try:
+                    resp = requests.post(BACKEND_URL, json=data, timeout=3)
+                    if not resp.ok:
+                        print(f"[{sid}] backend error {resp.status_code}: {resp.text}")
+                    else:
+                        print(f"[{sid}] sent at {data['timestamp']}")
+                except Exception as e:
+                    print(f"[{sid}] failed to send: {e}")
+
+                # small stagger so they don't all hit at the exact same ms
+                time.sleep(0.3)
+
+            # global pacing
+            time.sleep(SEND_INTERVAL_SECONDS)
+
+    except KeyboardInterrupt:
+        print("Simulator stopped.")
 
 
-if __name__ == '__main__':
-while True:
-payload = {
-'satellite_id': random.choice(sat_ids),
-'metric': random.choice(metrics),
-'value': round(random.uniform(0, 100), 2),
-'severity': random.choice(['low','medium','high'])
-}
-try:
-r = requests.post(BACKEND, json=payload, timeout=3)
-print('sent', payload, '=>', r.status_code)
-except Exception as e:
-print('error', e)
-time.sleep(3)
+if __name__ == "__main__":
+    main()

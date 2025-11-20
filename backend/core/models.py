@@ -22,7 +22,7 @@ class Telemetry(Base):
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
 
 # Anomaly table
-class Anomaly(Base):
+class AnomalyEvent(Base):
     __tablename__ = "anomalies"
     id = Column(Integer, primary_key=True, index=True)
     satellite_id = Column(String, index=True)
