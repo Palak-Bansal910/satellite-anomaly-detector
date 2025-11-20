@@ -11,7 +11,7 @@ def latest_anomalies():
     return {"data": get_latest_anomalies()}
 
 @router.get("/history")
-def anomaly_history(limit: int = Query(50, ge=1, le=200)):
+def get_anomaly_history(limit: int = Query(50, ge=1, le=200)):
     db = SessionLocal()
     try:
         rows = (

@@ -3,7 +3,7 @@ import time
 import requests
 import pandas as pd
 import streamlit as st
-
+from backend_client import send_telemetry_sample, fetch_anomaly_history
 from components.alert_cards import render_alert_card
 from components.health_panel import render_health_panel
 from components.live_plots import render_score_trend, render_issue_distribution
