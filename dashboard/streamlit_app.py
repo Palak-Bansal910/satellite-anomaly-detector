@@ -3,7 +3,6 @@ import time
 import requests
 import pandas as pd
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 
 from components.alert_cards import render_alert_cards
 from components.health_panel import render_health_panel
