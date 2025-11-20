@@ -39,5 +39,4 @@ docker run -p 8000:8000 anomaly-backend
 
 # Architecture Diagram
 
-docker build -t anomaly-backend .
-docker run -p 8000:8000 anomaly-backend
+
