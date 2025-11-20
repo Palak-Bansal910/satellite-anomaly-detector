@@ -1,77 +1,74 @@
-# orbit_anomaly_detection_with_temp.py
+# backend/models/sensor_autoencoderwith_temp.py
 
-import numpy as np
-from tensorflow.keras.models import load_model
-from pykalman import KalmanFilter
+"""
+Simplified sensor + temperature anomaly detector for demo.
 
-# ---------------------------
-# 1. Load LSTM Autoencoder
-# ---------------------------
-# Make sure your autoencoder was trained with the same number of features (x, y, z, temp)
-model = load_model("lstm_model.h5")
+Instead of a TensorFlow autoencoder, we use simple rule-based checks
+to compute an anomaly score between 0 and 1.
+"""
 
-# Define sequence length and number of features
-seq_len = 50      # Number of time steps in each sequence
-n_features = 4    # Features per time step: x, y, z, temp
+from typing import Dict, Tuple
 
-# ---------------------------
-# 2. Reconstruction error function
-# ---------------------------
-def detect(sequence):
+
+def detect(features: Dict[str, float]) -> Tuple[float, str]:
     """
-    Compute reconstruction error for a sequence using LSTM autoencoder.
-    Higher error indicates anomaly.
+    Detect anomaly based on sensor readings and temperature.
+
+    Args:
+        features: dict with keys like:
+            - sensor_temp_c
+            - battery_level_pct
+            - comm_signal_db
+            - orbit_altitude_km (optional)
+
+    Returns:
+        score (float): 0–1 anomaly score
+        message (str): explanation
     """
-    seq = np.array(sequence).reshape(1, seq_len, n_features)
-    recon = model.predict(seq, verbose=0)
-    error = np.mean((seq - recon) ** 2)
-    return error
+    temp = features.get("sensor_temp_c")
+    battery = features.get("battery_level_pct")
+    signal = features.get("comm_signal_db")
 
-# ---------------------------
-# 3. Kalman filter prediction function
-# ---------------------------
-def kalman_predict(orbit_seq):
-    """
-    Smooth orbit sequence using Kalman filter.
-    orbit_seq: numpy array of shape (seq_len, n_features)
-    Returns: smoothed sequence of same shape
-    """
-    kf = KalmanFilter(
-        transition_matrices=np.eye(n_features),
-        observation_matrices=np.eye(n_features),
-        initial_state_mean=orbit_seq[0],
-        observation_covariance=np.eye(n_features) * 0.01,
-        transition_covariance=np.eye(n_features) * 0.001
-    )
-    state_means, _ = kf.filter(orbit_seq)
-    return state_means
+    score = 0.0
+    reasons = []
 
-# ---------------------------
-# 4. Load orbit sequences
-# ---------------------------
-# Each sequence should have shape: (seq_len, n_features)
-# Example placeholder with random data:
-# orbit_data = [np.random.rand(seq_len, n_features) for _ in range(10)]
-orbit_data = ...  # Replace with your actual sequences (x, y, z, temp)
+    # Temperature checks
+    if temp is not None:
+        if temp > 80:
+            score += 0.6
+            reasons.append(f"High temperature {temp:.1f} °C")
+        elif temp > 60:
+            score += 0.3
+            reasons.append(f"Elevated temperature {temp:.1f} °C")
+        elif temp < -20:
+            score += 0.4
+            reasons.append(f"Very low temperature {temp:.1f} °C")
 
-# ---------------------------
-# 5. Set anomaly detection threshold
-# ---------------------------
-# Calculate from normal sequences: mean + 2*std of reconstruction errors
-threshold = 0.001  # adjust based on your data
+    # Battery checks
+    if battery is not None:
+        if battery < 15:
+            score += 0.4
+            reasons.append(f"Low battery {battery:.1f}%")
+        elif battery < 30:
+            score += 0.2
+            reasons.append(f"Weak battery {battery:.1f}%")
 
-# ---------------------------
-# 6. Run anomaly detection
-# ---------------------------
-for i, seq in enumerate(orbit_data):
-    # 1. Smooth sequence with Kalman filter
-    kalman_seq = kalman_predict(seq)
+    # Signal strength checks
+    if signal is not None:
+        # e.g. -120 dB = very weak, -50 dB = strong
+        if signal < -110:
+            score += 0.4
+            reasons.append(f"Very weak signal {signal:.1f} dB")
+        elif signal < -90:
+            score += 0.2
+            reasons.append(f"Weak signal {signal:.1f} dB")
 
-    # 2. Compute reconstruction error (autoencoder)
-    error = detect(kalman_seq)
-
-    # 3. Check for anomaly
-    if error > threshold:
-        print(f"[ALERT] Sequence {i}: Anomaly detected! Error = {error:.6f}")
+    # Cap score
+    if score == 0.0:
+        message = "Sensor & temperature nominal"
     else:
-        print(f"Sequence {i}: Normal orbit. Error = {error:.6f}")
+        if score > 1.0:
+            score = 1.0
+        message = "; ".join(reasons)
+
+    return score, message
