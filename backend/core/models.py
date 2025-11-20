@@ -4,7 +4,7 @@ from .database import Base
 
 
 class Anomaly(Base):
-__tablename__ = "anomalies"
+    __tablename__ = "anomalies"
 id = Column(Integer, primary_key=True, index=True)
 satellite_id = Column(String, index=True)
 metric = Column(String)
