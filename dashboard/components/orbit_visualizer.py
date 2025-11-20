@@ -42,7 +42,6 @@ def render_orbit_visualizer(history_records, selected_satellite=None, play=False
 
     if len(rows) == 0:
         st.info("Position data unavailable from backend. Showing placeholder image.")
-        st.image("/mnt/data/d95c7e05-7a68-4857-bc74-e64108d8518e.png", caption="Orbit placeholder", use_column_width=True)
         return
 
     df = pd.DataFrame(rows)

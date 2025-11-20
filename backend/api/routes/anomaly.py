@@ -1,8 +1,8 @@
 # backend/api/routes/anomaly.py
 from fastapi import APIRouter, Query
-from ...services.state import get_latest_anomalies
-from ...core.database import SessionLocal
-from ...core.models import AnomalyEvent
+from backend.services.state import get_latest_anomalies
+from backend.core.database import SessionLocal
+from backend.core.models import AnomalyEvent
 
 router = APIRouter(prefix="/anomalies", tags=["Anomalies"])
 

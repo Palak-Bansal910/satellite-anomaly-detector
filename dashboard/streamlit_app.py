@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 import streamlit as st
 
-from components.alert_cards import render_alert_cards
+from components.alert_cards import render_alert_card
 from components.health_panel import render_health_panel
 from components.live_plots import render_score_trend, render_issue_distribution
 from components.orbit_visualizer import render_orbit_visualizer
@@ -81,7 +81,7 @@ with col1:
             latest_filtered = [l for l in latest if l.get("satellite_id") == selected_sat]
         else:
             latest_filtered = latest
-        render_alert_cards(latest_filtered)
+        render_alert_card(latest_filtered)
 
     st.markdown("---")
     st.subheader("Anomaly Score Trend")

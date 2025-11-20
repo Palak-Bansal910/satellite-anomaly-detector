@@ -1,11 +1,11 @@
 # backend/api/routes/telemetry.py
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from ...services.preprocess import preprocess_telemetry
-from ...services.anomaly_engine import compute_anomaly
-from ...services.state import add_anomaly_record
-from ...core.database import SessionLocal
-from ...core.models import AnomalyEvent
+from backend.services.preprocess import preprocess_telemetry
+from backend.services.anomaly_engine import compute_anomaly
+from backend.services.state import add_anomaly_record
+from backend.core.database import SessionLocal     # adjust name if your file is database.py
+from backend.models import AnomalyEvent
 from ...core.logger import logger
 
 router = APIRouter(prefix="/telemetry", tags=["Telemetry"])
