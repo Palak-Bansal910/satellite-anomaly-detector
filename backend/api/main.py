@@ -1,21 +1,27 @@
+# backend/api/main.py
 from fastapi import FastAPI
-from core.database import engine, Base
+from fastapi.middleware.cors import CORSMiddleware
+from .routes import telemetry, anomaly
+from ..core.database import Base, engine
+from ..core.logger import logger
 
-# Import routers
-from routes.anomaly_routes import router as anomaly_router
-from routes.user_routes import router as user_router
-
-# Create database tables
+# create tables
 Base.metadata.create_all(bind=engine)
+logger.info("Database tables ensured.")
 
-# Initialize FastAPI app
-app = FastAPI(title="Satellite Anomaly Detection Backend")
+app = FastAPI(title="Satellite Anomaly Detector API", version="0.1.0")
 
-# Include routers
-app.include_router(user_router)      # Routes for User table
-app.include_router(anomaly_router)   # Routes for Anomaly table
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-# Optional root endpoint
+app.include_router(telemetry.router)
+app.include_router(anomaly.router)
+
 @app.get("/")
 def root():
-    return {"message": "Backend is running!"}
+    return {"message": "Satellite Anomaly Detector Backend is running"}
