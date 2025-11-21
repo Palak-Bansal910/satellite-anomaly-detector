@@ -1,11 +1,7 @@
 # simulator/comms_anomalies.py
 import random
 from typing import Dict
-
-try:
-    from .telemetry_simulator import TelemetrySimulator
-except ImportError:
-    from simulator.telemetry_simulator import TelemetrySimulator
+from telemetry_simulator import TelemetrySimulator
 
 
 class CommsAnomalyInjector:

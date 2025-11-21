@@ -5,20 +5,14 @@ import requests
 import sys
 from pathlib import Path
 
-project_root = Path(__file__).resolve().parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+current_dir = Path(__file__).resolve().parent
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
 
-try:
-    from .telemetry_simulator import TelemetrySimulator
-    from .temp_anomalies import TempAnomalyInjector
-    from .sensor_failures import SensorFailureInjector
-    from .comms_anomalies import CommsAnomalyInjector
-except ImportError:
-    from simulator.telemetry_simulator import TelemetrySimulator
-    from simulator.temp_anomalies import TempAnomalyInjector
-    from simulator.sensor_failures import SensorFailureInjector
-    from simulator.comms_anomalies import CommsAnomalyInjector
+from telemetry_simulator import TelemetrySimulator
+from temp_anomalies import TempAnomalyInjector
+from sensor_failures import SensorFailureInjector
+from comms_anomalies import CommsAnomalyInjector
 
 BACKEND_URL = "http://127.0.0.1:8000/telemetry/"
 
